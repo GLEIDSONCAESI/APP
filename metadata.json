@@ -1,0 +1,8 @@
+{
+  "name": "ANGELICADMC - Study & Pomodoro Assistant",
+  "description": "A comprehensive study companion featuring a Pomodoro timer, daily goal tracking, intelligent scheduling, and AI-powered study planning.",
+  "requestFramePermissions": [
+    "microphone",
+    "geolocation"
+  ]
+}
