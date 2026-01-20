@@ -1,16 +1,16 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-// Use process.env.API_KEY directly as per the coding guidelines
+// Standardizing AI instance creation
 const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const generateStudyPlan = async (topics: string, availableHours: number) => {
   const ai = getAI();
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
-    contents: `Create a detailed study schedule for the following topics: "${topics}". 
-    I have ${availableHours} hours available. Return a JSON array of schedule items.
-    Each item must have "time" (HH:MM), "subject" (string), and "duration" (minutes).`,
+    contents: `Crie um cronograma de estudos detalhado para os seguintes temas: "${topics}". 
+    Eu tenho ${availableHours} horas disponíveis. Retorne um array JSON de itens de cronograma.
+    Cada item deve ter "time" (HH:MM), "subject" (string) e "duration" (número de minutos).`,
     config: {
       responseMimeType: "application/json",
       responseSchema: {
@@ -28,21 +28,26 @@ export const generateStudyPlan = async (topics: string, availableHours: number) 
     }
   });
 
+  const text = response.text || '[]';
   try {
-    return JSON.parse(response.text || '[]');
+    return JSON.parse(text);
   } catch (e) {
-    console.error("Failed to parse AI response", e);
+    console.error("Failed to parse AI response:", text);
     return [];
   }
 };
 
 export const getStudyMotivation = async () => {
   const ai = getAI();
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
-    contents: "Give me a short, powerful Brazilian Portuguese motivational quote for a student who is tired but wants to reach their goals. Max 20 words.",
-  });
-  return response.text;
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: "Dê uma frase motivacional poderosa e curta em português brasileiro para um estudante cansado. Máximo 20 palavras.",
+    });
+    return response.text || "O sucesso é a soma de pequenos esforços repetidos dia após dia.";
+  } catch (e) {
+    return "O sucesso é a soma de pequenos esforços repetidos dia após dia.";
+  }
 };
 
 export const searchStudyTopic = async (topic: string) => {
@@ -55,9 +60,9 @@ export const searchStudyTopic = async (topic: string) => {
     },
   });
 
-  const text = response.text;
+  const text = response.text || "Não foi possível gerar um resumo para este tema.";
   const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks?.map((chunk: any) => ({
-    title: chunk.web?.title || 'Fonte',
+    title: chunk.web?.title || 'Fonte externa',
     uri: chunk.web?.uri
   })).filter((s: any) => s.uri) || [];
 
@@ -67,23 +72,23 @@ export const searchStudyTopic = async (topic: string) => {
 export const findStudySpots = async (query: string, latitude?: number, longitude?: number) => {
   const ai = getAI();
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents: `Encontre os melhores lugares para estudar perto de mim que combinem com: "${query}". Pode ser bibliotecas, cafés silenciosos ou espaços de coworking. Liste as opções com breves detalhes.`,
+    model: "gemini-2.5-flash-preview-01-2025",
+    contents: `Encontre os melhores lugares para estudar (bibliotecas, cafés, coworkings) relacionados a: "${query}".`,
     config: {
       tools: [{ googleMaps: {} }],
       toolConfig: {
         retrievalConfig: {
-          latLng: latitude && longitude ? { latitude, longitude } : undefined
+          latLng: (latitude !== undefined && longitude !== undefined) ? { latitude, longitude } : undefined
         }
       }
     },
   });
 
-  const text = response.text;
+  const text = response.text || "Não foram encontrados locais específicos.";
   const mapChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks?.filter((chunk: any) => chunk.maps) || [];
   
   const places = mapChunks.map((chunk: any) => ({
-    title: chunk.maps.title || "Local",
+    title: chunk.maps.title || "Local de Estudo",
     uri: chunk.maps.uri,
     snippets: chunk.maps.placeAnswerSources?.reviewSnippets || []
   }));

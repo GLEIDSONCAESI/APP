@@ -15,8 +15,12 @@ const App: React.FC = () => {
   const [sessions, setSessions] = useState<StudySession[]>([]);
   const [schedule, setSchedule] = useState<ScheduleItem[]>([]);
   const [dailyGoal, setDailyGoal] = useState<DailyGoal>(() => {
-    const saved = localStorage.getItem('edumind-daily-goal');
-    if (saved) return JSON.parse(saved);
+    try {
+      const saved = localStorage.getItem('edumind-daily-goal');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error("Error loading daily goal", e);
+    }
     return {
       id: 'goal-1',
       date: new Date().toISOString().split('T')[0],
@@ -36,12 +40,16 @@ const App: React.FC = () => {
 
   // Load from LocalStorage
   useEffect(() => {
-    const savedTasks = localStorage.getItem('edumind-tasks');
-    const savedSessions = localStorage.getItem('edumind-sessions');
-    const savedSchedule = localStorage.getItem('edumind-schedule');
-    if (savedTasks) setTasks(JSON.parse(savedTasks));
-    if (savedSessions) setSessions(JSON.parse(savedSessions));
-    if (savedSchedule) setSchedule(JSON.parse(savedSchedule));
+    try {
+      const savedTasks = localStorage.getItem('edumind-tasks');
+      const savedSessions = localStorage.getItem('edumind-sessions');
+      const savedSchedule = localStorage.getItem('edumind-schedule');
+      if (savedTasks) setTasks(JSON.parse(savedTasks));
+      if (savedSessions) setSessions(JSON.parse(savedSessions));
+      if (savedSchedule) setSchedule(JSON.parse(savedSchedule));
+    } catch (e) {
+      console.error("Error loading stored data", e);
+    }
   }, []);
 
   // Save to LocalStorage
@@ -140,8 +148,11 @@ const App: React.FC = () => {
       const result = await searchStudyTopic(topic);
       setConsultationResult(result);
     } catch (e) {
-      console.error(e);
-      setConsultationResult({ text: "Não foi possível carregar informações sobre este tema no momento.", sources: [] });
+      console.error("Consultation Error:", e);
+      setConsultationResult({ 
+        text: "Desculpe, ocorreu um erro ao consultar os servidores da Gemini. Por favor, verifique sua conexão ou tente novamente mais tarde.", 
+        sources: [] 
+      });
     } finally {
       setIsConsulting(false);
     }
@@ -256,7 +267,7 @@ const App: React.FC = () => {
                       type="time" 
                       value={newItem.time}
                       onChange={(e) => setNewItem({...newItem, time: e.target.value})}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                     />
                   </div>
                   <div className="space-y-1 md:col-span-2">
@@ -266,7 +277,7 @@ const App: React.FC = () => {
                       placeholder="O que você vai estudar?"
                       value={newItem.subject}
                       onChange={(e) => setNewItem({...newItem, subject: e.target.value})}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                     />
                   </div>
                   <div className="space-y-1">
@@ -275,7 +286,7 @@ const App: React.FC = () => {
                       type="number" 
                       value={newItem.duration}
                       onChange={(e) => setNewItem({...newItem, duration: parseInt(e.target.value) || 0})}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                     />
                   </div>
                 </div>
@@ -349,7 +360,7 @@ const App: React.FC = () => {
         </aside>
 
         {/* Main Content Area */}
-        <main className="flex-1 p-4 md:p-8 lg:p-12 mb-20 md:mb-0 overflow-y-auto max-h-screen">
+        <main className="flex-1 p-4 md:p-8 lg:p-12 mb-20 md:mb-0 overflow-y-auto max-h-screen custom-scrollbar">
           <div className="max-w-6xl mx-auto">
             {renderContent()}
           </div>
